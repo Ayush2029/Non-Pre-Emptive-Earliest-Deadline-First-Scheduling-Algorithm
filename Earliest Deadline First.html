@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDF Scheduler</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: inline-table;
+            background-color: #ffffff;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            font-weight: bold;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        td {
+            background-color: #f2f2f2;
+        }
+        .id-cell {
+            background-color: #ffeb3b;
+        }
+        .gantt-chart {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f7f7f7;
+            overflow-x: auto;
+            gap: 5px;
+        }
+        .title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-top: 20px;
+        }
+        hr {
+            margin: 20px 0;
+            border: 0;
+            height: 1px;
+            background: #888;
+        }
+        .loading {
+            display: none;
+            font-size: 24px;
+            color: #4CAF50;
+            margin-top: 20px;
+        }
+        .task-block {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 10px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1 1 auto;
+        }
+        .completed-task {
+            background-color: green;
+        }
+        .missed-deadline {
+            background-color: red;
+        }
+        .arrived-after-deadline {
+            background-color: purple;
+        }
+        .idle-time {
+            background-color: yellow;
+            color: #8B8000;
+            font-style: italic;
+            border-radius: 4px;
+            flex: 1 1 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">Operating System - Special Assignment</h1>
+    <h2 class="title">Made by: Ayush Dharaiya (22BEC031) and Parin Patel (22BEC090)</h2>
+    <h2>Non-Pre-Emptive Earliest Deadline First Scheduler</h2>
+    <hr>
+    <h2>Input Task Details</h2>
+    <div id="task-table"></div>
+    <h2>Sorted Task Details</h2>
+    <div id="sorted-task-table"></div>
+    <h2>Gantt Chart</h2>
+    <div id="gantt-chart" class="gantt-chart"></div>
+    <div class="loading" id="loading-message">Loading...</div>
+    <script>
+        let timeUnit;
+
+        function validateTimeUnit(unit) {
+            return unit === "s" || unit === "ms";
+        }
+
+        do {
+            timeUnit = prompt("Enter the time unit (s for seconds, ms for milliseconds):").trim();
+        } while (!validateTimeUnit(timeUnit));
+
+        class Task {
+            constructor(id, execTime, deadline, arrivalTime) {
+                this.id = id;
+                this.execTime = execTime;
+                this.deadline = deadline;
+                this.arrivalTime = arrivalTime;
+                this.completed = false;
+                this.startTime = 0;
+                this.endTime = 0;
+                this.missedDeadline = false;
+                this.arrivedAfterDeadline = false;
+            }
+        }
+
+        function compareByDeadline(a, b) {
+            return a.deadline - b.deadline;
+        }
+
+        function createTaskTable(tasks, tableDivId) {
+            const tableDiv = document.getElementById(tableDivId);
+            let tableHTML = '<table><tr><th>ID</th><th>Execution Time</th><th>Deadline</th><th>Arrival Time</th></tr>';
+            tasks.forEach(task => {
+                tableHTML += `<tr>
+                    <td class="id-cell">${task.id}</td>
+                    <td>${task.execTime} ${timeUnit}</td>
+                    <td>${task.deadline} ${timeUnit}</td>
+                    <td>${task.arrivalTime} ${timeUnit}</td>
+                </tr>`;
+            });
+            tableHTML += '</table>';
+            tableDiv.innerHTML = tableHTML;
+        }
+
+        function createGanttChart(tasks) {
+            const ganttDiv = document.getElementById('gantt-chart');
+            ganttDiv.innerHTML = '';
+            let previousEndTime = 0;
+            tasks.forEach(task => {
+                if (task.arrivedAfterDeadline) {
+                    const message = document.createElement("div");
+                    message.className = 'task-block arrived-after-deadline';
+                    message.textContent = `Task ${task.id} arrived after deadline`;
+                    ganttDiv.appendChild(message);
+                } else if (task.completed) {
+                    if (task.startTime > previousEndTime) {
+                        const idleBlock = document.createElement("div");
+                        idleBlock.className = 'task-block idle-time';
+                        idleBlock.textContent = `Idle (${previousEndTime} - ${task.startTime} ${timeUnit})`;
+                        ganttDiv.appendChild(idleBlock);
+                    }
+                    const taskBox = document.createElement("div");
+                    taskBox.className = task.missedDeadline ? 'task-block missed-deadline' : 'task-block completed-task';
+                    taskBox.textContent = `Task ${task.id} (${task.startTime}-${task.endTime} ${timeUnit})`;
+                    ganttDiv.appendChild(taskBox);
+                    previousEndTime = task.endTime;
+                }
+            });
+            if (previousEndTime < Math.max(...tasks.map(task => task.deadline))) {
+                const idleBlock = document.createElement("div");
+                idleBlock.className = 'task-block idle-time';
+                idleBlock.textContent = `Idle (${previousEndTime} - End ${timeUnit})`;
+                ganttDiv.appendChild(idleBlock);
+            }
+        }
+
+        function EDF_Scheduler(tasks) {
+            let currentTime = 0;
+            while (true) {
+                let availableTasks = tasks.filter(task => !task.completed && task.arrivalTime <= currentTime);
+                availableTasks.sort(compareByDeadline);
+                let taskExecutedInThisCycle = false;
+                for (let task of availableTasks) {
+                    if (task.arrivalTime > task.deadline) {
+                        task.arrivedAfterDeadline = true;
+                        continue;
+                    }
+                    task.startTime = Math.max(currentTime, task.arrivalTime);
+                    if (task.startTime + task.execTime > task.deadline) {
+                        task.endTime = task.deadline;
+                        task.missedDeadline = true;
+                    } else {
+                        task.endTime = task.startTime + task.execTime;
+                    }
+                    task.completed = true;
+                    currentTime = task.endTime;
+                    taskExecutedInThisCycle = true;
+                    break;
+                }
+                const allTasksCompleted = tasks.every(task => task.completed || task.arrivedAfterDeadline);
+                if (allTasksCompleted) break;
+                if (!taskExecutedInThisCycle) {
+                    let nextArrivalTime = Math.min(...tasks.filter(task => !task.completed && !task.arrivedAfterDeadline).map(task => task.arrivalTime));
+                    currentTime = nextArrivalTime;
+                }
+            }
+        }
+
+        let numTasks;
+        do {
+            numTasks = parseInt(prompt("Enter a valid number of tasks: "));
+        } while (isNaN(numTasks) || numTasks <= 0);
+
+        let tasks = [];
+        for (let i = 0; i < numTasks; i++) {
+            let execTime, deadline, arrivalTime;
+            do {
+                execTime = parseInt(prompt(`Enter execution time for Task ${i + 1} (${timeUnit}):`));
+            } while (isNaN(execTime) || execTime < 0);
+            do {
+                deadline = parseInt(prompt(`Enter deadline for Task ${i + 1} (${timeUnit}):`));
+            } while (isNaN(deadline) || deadline < 0);
+            do {
+                arrivalTime = parseInt(prompt(`Enter arrival time for Task ${i + 1} (${timeUnit}):`));
+            } while (isNaN(arrivalTime) || arrivalTime < 0);
+            tasks.push(new Task(i + 1, execTime, deadline, arrivalTime));
+        }
+
+        const loadingMessage = document.getElementById('loading-message');
+        loadingMessage.style.display = 'block';
+        setTimeout(() => {
+            createTaskTable(tasks, 'task-table');
+            tasks.sort(compareByDeadline);
+            createTaskTable(tasks, 'sorted-task-table');
+            EDF_Scheduler(tasks);
+            createGanttChart(tasks);
+            loadingMessage.style.display = 'none';
+            document.body.style.opacity = 1;
+        }, 1000);
+    </script>
+</body>
+</html>
+
