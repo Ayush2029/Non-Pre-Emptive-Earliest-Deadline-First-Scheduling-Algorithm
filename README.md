@@ -18,7 +18,7 @@ This particular implementation is non-pre-emptive, meaning that once a task begi
 - Clear UI: The user interface is simple and intuitive, making it easy to understand the scheduling process.<br>
 
 <h3> How to Use </h3>
-1] Clone the repository:
+1] Clone the repository:  <br>
 git clone https://github.com/Ayush2029/Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm.git <br>
 2] Navigate to the project directory: <br>
 cd Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm <br>
