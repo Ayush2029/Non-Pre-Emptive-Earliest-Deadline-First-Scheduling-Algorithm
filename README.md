@@ -19,10 +19,10 @@ This particular implementation is non-pre-emptive, meaning that once a task begi
 
 <h3> How to Use </h3>
 1] Clone the repository:
-git clone https://github.com/your-username/EDF-Scheduler.git
-2] Navigate to the project directory:
-cd EDF-Scheduler
-3] Open index.html: Simply open the index.html file in your web browser. <br>
+git clone https://github.com/Ayush2029/Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm.git <br>
+2] Navigate to the project directory: <br>
+cd Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm <br>
+3] Open EDF.html: Simply open the EDF.html file in your web browser. <br>
 The application will then prompt you to: <br>
 - Enter your desired time unit (s or ms). <br>
 - Specify the number of tasks. <br>
