@@ -22,7 +22,7 @@ This particular implementation is non-pre-emptive, meaning that once a task begi
 git clone https://github.com/Ayush2029/Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm.git <br>
 2] Navigate to the project directory: <br>
 cd Non-Pre-Emptive-Earliest-Deadline-First-Scheduling-Algorithm <br>
-3] Open EDF.html: Simply open the EDF.html file in your web browser. <br>
+3] Open Earliest Deadline First.html: Simply open the Earliest Deadline First.html file in your web browser. <br>
 The application will then prompt you to: <br>
 - Enter your desired time unit (s or ms). <br>
 - Specify the number of tasks. <br>
